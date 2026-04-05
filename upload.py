@@ -140,12 +140,7 @@ def main():
 
     if 'tiktok' in platforms:
         try:
-            open_new_tab_and_search("tiktok.com/upload", delay=1.5)
-            upload_tiktok_electron.upload(
-                caption, video, paste_path_and_confirm,
-                dom_success_caption=False,
-                dom_success_post=False,
-            )
+            upload_tiktok_electron.upload(caption, video, paste_path_and_confirm)
         except Exception as e:
             print(f"Error during TikTok upload: {e}")
 

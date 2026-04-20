@@ -91,7 +91,7 @@ def paste_file_path(video_file):
     pyperclip.copy(video_file)
     for attempt in range(3):
         pyautogui.hotkey("ctrl", "v")
-        time.sleep(0.4)
+        time.sleep(2)
         pyautogui.press("enter")
         time.sleep(0.8)
         if not pyautogui.locateOnScreen(
@@ -140,6 +140,7 @@ def wait_for_post_button(max_wait=180, check_interval=2):
         # Stage 1: RGB color check
         try:
             pixel = pyautogui.screenshot().getpixel(POST_BUTTON_COORDS[1])
+            print(f" Current pixel at post coords: {pixel}")
         except Exception as e:
             print(f" Screenshot error: {e}")
             pixel = None
@@ -187,7 +188,7 @@ def wait_for_post_button(max_wait=180, check_interval=2):
 
 def upload(caption, video_file, paste_path_func=None):
     print(" Starting TikTok upload process...")
-    time.sleep(4)
+    time.sleep(8)
 
     # Step 1: Click Select video
     print(" Looking for 'Select video' button...")
@@ -214,8 +215,10 @@ def upload(caption, video_file, paste_path_func=None):
 
     # Step 4: Scroll down and click Post via three-stage detection
     print(" Scrolling down to Post button...")
-    pyautogui.scroll(-10000)
-    time.sleep(0.5)
+    pyautogui.moveTo(960, 600)   # center of screen — over the main TikTok page
+    time.sleep(0.3)
+    pyautogui.scroll(-1000000)
+    time.sleep(1.5)              # give the page time to finish scrolling
     wait_for_post_button()
 
     write_tiktok_ready_signal(caption, video_file)

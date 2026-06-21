@@ -82,27 +82,24 @@ def select_file_only(video_file, paste_path_func=None):
 
     _log("PAG: File selection done. DOM takes over.")
 
+
 def write_title_pag(caption):
-    _log("PAG: Waiting for title box to appear...")
+    _log("PAG: Waiting for details page to load...")
+    time.sleep(4)  # wait for YT details page after file upload
     
-    # Wait for title box via image match first
-    title_box = safe_locate('yt_title_new.png', confidence=0.65, retries=15, delay=1.0)
+    _log("PAG: Clicking title box (725, 415)...")
+    pyautogui.click(725, 415)
+    time.sleep(1.0)
     
-    if title_box:
-        _log(f"PAG: Title box found at {title_box}. Clicking...")
-        pyautogui.click(title_box.x, title_box.y)
-    else:
-        _log("PAG: Title image not found, using fallback coords...")
-        pyautogui.click(742, 507)
-    
-    time.sleep(0.8)
     pyautogui.hotkey('ctrl', 'a')
-    time.sleep(0.2)
+    time.sleep(0.4)
     pyautogui.press('backspace')
-    time.sleep(0.2)
-    pyautogui.write(caption, interval=0.08)
+    time.sleep(0.3)
+    
+    pyautogui.write(caption, interval=0.07)
     _log(f"PAG: Title written: {caption}")
     return True
+
 
 def upload_youtube(caption, video_file, paste_path_func=None):
     """
@@ -133,4 +130,7 @@ def upload_youtube(caption, video_file, paste_path_func=None):
     select_file_only(video_file, paste_path_func)
 
     _log("Full PAG mode: file selected. Note — use hybrid mode for title/publish.")
+
+    # write_title_pag(caption)
+
     return True

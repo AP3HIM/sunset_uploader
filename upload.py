@@ -88,7 +88,7 @@ def main():
     parser.add_argument('--video',       type=str, required=True)
     parser.add_argument('--platforms',   nargs='+', action='append', default=[])
     parser.add_argument('--mode',        type=str, default="full",
-                        choices=["full", "file-select-only", "pag-fallback"])
+                        choices=["full", "file-select-only", "pag-fallback", "write-title", "write-title-retry", "crop-select"])
     parser.add_argument('--dom-caption', type=str, default="0")
     parser.add_argument('--dom-post',    type=str, default="0")
 
@@ -111,7 +111,7 @@ def main():
         if platform_arg == "tiktok":
             upload_tiktok_electron.select_file_only(video, paste_path_and_confirm)
         elif platform_arg == "instagram":
-            upload_instagram_electron.select_file_only(video, paste_path_and_confirm)
+            upload_instagram_electron.select_file_only(video, paste_path_and_confirm, select_crop=True)  # <-- add this
         elif platform_arg == "youtube":
             upload_youtube_electron.select_file_only(video, paste_path_and_confirm)
         elif platform_arg == "twitter":
@@ -142,6 +142,25 @@ def main():
         # YouTube has no pag-fallback needed — DOM handles everything after file select
 
         print("PAG fallback complete.")
+        return
+    
+    # ── write-title ───────────────────────────────────────────────────────────────
+    if mode == "write-title":
+        print(f"Write-title mode: caption={caption!r}")
+        upload_youtube_electron.write_title_pag(caption)
+        print("write-title complete.")
+        return
+
+    if mode == "write-title-retry":
+        print(f"Write-title-retry mode: caption={caption!r}")
+        upload_youtube_electron.write_title_pag_retry(caption)
+        print("write-title-retry complete.")
+        return
+
+    if mode == "crop-select":
+        print("Crop-select mode: PAG clicking 9:16 coords")
+        upload_instagram_electron.select_crop_pag()
+        print("Crop select complete.")
         return
 
     # ── full legacy PAG ───────────────────────────────────────────────────────

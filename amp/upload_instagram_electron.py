@@ -50,6 +50,15 @@ def safe_locate(image_name: str, confidence=DEFAULT_CONFIDENCE,
     _log(f"  did not find {image_name} (searched {retries}x)")
     return None
 
+def safe_locate_any(image_list, confidence=0.7, retries=5, delay=0.5):
+    """Try multiple image variants in order, return first match."""
+    for img in image_list:
+        loc = safe_locate(img, confidence=confidence, retries=retries, delay=delay)
+        if loc:
+            _log(f"Matched variant: {img}")
+            return loc
+    _log(f"No variant matched from: {image_list}")
+    return None
 
 def click_point(pt: Tuple[int, int]):
     if DRY_RUN:
@@ -192,6 +201,37 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
             return False
         _log("File accepted.")
 
+        # Crop to 9:16
+        _log("PAG: waiting for crop button...")
+        time.sleep(3.0)
+
+        crop_btn = safe_locate_any(
+            ["insta_crop_button.png", "insta_crop_button_small.png"],
+            confidence=0.7, retries=10, delay=0.6
+        )
+        if crop_btn:
+            _log(f"PAG: clicking crop button at {crop_btn}...")
+            pyautogui.click(crop_btn.x, crop_btn.y)
+        else:
+            _log("PAG: crop button not found by image, using coords (631, 987)...")
+            pyautogui.click(631, 987)
+
+        time.sleep(1.2)
+
+        nine_sixteen = safe_locate_any(
+            ["insta_916_small.png"],
+            confidence=0.7, retries=8, delay=0.6
+        )
+        if nine_sixteen:
+            _log(f"PAG: clicking 9:16 at {nine_sixteen}...")
+            pyautogui.click(nine_sixteen.x, nine_sixteen.y)
+        else:
+            _log("PAG: 9:16 image not found, using coords (668, 853)...")
+            pyautogui.click(668, 853)
+
+        time.sleep(0.5)
+        _log("PAG: crop done.")
+
         if not click_or_fallback("insta_next_file.png", FALLBACKS["next1"]):
             _log("Missing first Next — abort.")
             return False
@@ -232,14 +272,9 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
 # PAG just handles file selection. DOM did Create/Post already.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def select_file_only(video_file: str, paste_path_func) -> bool:
-    """
-    Called after DOM has already clicked Create and Post.
-    PAG clicks Select File, pastes the path, and exits.
-    DOM then handles Next x2, caption area click, and Share.
-    """
+def select_file_only(video_file: str, paste_path_func, select_crop: bool = False) -> bool:
     _log("PAG: select_file_only — clicking Select File button")
-    time.sleep(1.5)  # wait for IG file picker to be visible
+    time.sleep(1.5)
 
     if not click_or_fallback("insta_select_file.png", FALLBACKS["select_file"]):
         _log("Could not find Select File — aborting.")
@@ -249,11 +284,38 @@ def select_file_only(video_file: str, paste_path_func) -> bool:
     _log(f"PAG: pasting file path: {video_file}")
     paste_path_func(video_file)
 
-    # Wait for dialog to close before handing back to DOM
-    time.sleep(2.0)
+    if select_crop:
+        _log("PAG: waiting for crop button to appear...")
+        crop_btn = safe_locate_any(
+            ["insta_crop_button.png", "insta_crop_button_small.png"],
+            confidence=0.7, retries=20, delay=0.8
+        )
+        if crop_btn:
+            _log(f"PAG: crop button found at {crop_btn}, clicking...")
+            pyautogui.click(crop_btn.x, crop_btn.y)
+        else:
+            _log("PAG: crop button not found by image, using coords (631, 987)...")
+            pyautogui.click(631, 987)
+        time.sleep(1.2)
+
+        nine_sixteen = safe_locate_any(
+            ["insta_916_small.png"],
+            confidence=0.7, retries=8, delay=0.6
+        )
+        if nine_sixteen:
+            _log(f"PAG: clicking 9:16 at {nine_sixteen}...")
+            pyautogui.click(nine_sixteen.x, nine_sixteen.y)
+        else:
+            _log("PAG: 9:16 image not found, using coords (668, 853)...")
+            pyautogui.click(668, 853)
+
+        time.sleep(0.5)
+        _log("PAG: crop done.")
+    else:
+        time.sleep(5)
+
     _log("PAG: file selection done. DOM takes over.")
     return True
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NEW: write_caption_pag — PAG fallback for caption if DOM fails
@@ -273,6 +335,16 @@ def write_caption_pag(caption: str) -> bool:
     _log("PAG: caption fallback failed.")
     return False
 
+def select_crop_pag() -> bool:
+    """PAG fallback for 9:16 crop selection using known coords."""
+    _log("PAG: Clicking crop button via coords...")
+    pyautogui.click(631, 987)  # Select crop button
+    time.sleep(0.8)
+    _log("PAG: Clicking 9:16 option via coords...")
+    pyautogui.click(668, 853)  # 9:16 option
+    time.sleep(0.4)
+    _log("PAG: Crop selected.")
+    return True
 
 if __name__ == "__main__":
     print("Running as script. DRY_RUN:", DRY_RUN)

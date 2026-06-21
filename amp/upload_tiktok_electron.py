@@ -15,6 +15,9 @@ IMAGES_DIR = os.path.join(BASE_DIR, '../images')
 SIGNALS_DIR = r"C:\Users\adipa\sunsetuploader\signals"
 os.makedirs(SIGNALS_DIR, exist_ok=True)
 
+def _log(*args):
+    print("[TikTok-UPLOAD]", *args)
+
 # -------------------
 # Configuration
 # -------------------
@@ -124,6 +127,15 @@ def click_wave(coords_list, label, repeat_per_coord=3, wait=0.15):
             strong_click(jx, jy)
             time.sleep(wait)
 
+def safe_locate_any(image_list, confidence=0.7, retries=5, delay=0.5):
+    """Try multiple image variants in order, return first match."""
+    for img in image_list:
+        loc = safe_locate(img, confidence=confidence, retries=retries, delay=delay)
+        if loc:
+            _log(f"Matched variant: {img}")
+            return loc
+    _log(f"No variant matched from: {image_list}")
+    return None
 
 def wait_for_post_button(max_wait=180, check_interval=2):
     """
@@ -156,10 +168,7 @@ def wait_for_post_button(max_wait=180, check_interval=2):
         time.sleep(3)
 
         # Stage 2: Image match
-        try:
-            btn_loc = pyautogui.locateCenterOnScreen(post_img_path, confidence=0.75)
-        except Exception:
-            btn_loc = None
+        btn_loc = safe_locate_any(["post_file.png", "post_file_small.png"], confidence=0.75, retries=1, delay=0.1)
 
         if btn_loc:
             print(f" [Stage 2] Image match at {btn_loc}. Clicking...")

@@ -137,7 +137,7 @@ def upload_clip(video_file, caption):
         "--platforms",
         "tiktok",
         "instagram",
-        "twitter"
+        #"twitter"
     ]
 
     subprocess.run(cmd, check=True)

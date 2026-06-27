@@ -83,12 +83,15 @@ def write_caption(caption):
             pyautogui.press('backspace')
             pyautogui.write(caption, interval=0.05)
             print(f" Caption entered at ({x}, {y}).")
+            
+            # Extra buffer so typing is fully committed before extension checks for it
+            time.sleep(2.0)
+            
             return True
         except Exception:
             continue
     print(" Failed to write caption.")
     return False
-
 
 def paste_file_path(video_file):
     pyperclip.copy(video_file)
@@ -136,7 +139,7 @@ def safe_locate_any(image_list, confidence=0.7, retries=5, delay=0.5):
             return loc
     _log(f"No variant matched from: {image_list}")
     return None
-
+'''
 def wait_for_post_button(max_wait=180, check_interval=2):
     """
     Three-stage Post button detection:
@@ -189,7 +192,7 @@ def wait_for_post_button(max_wait=180, check_interval=2):
     print(" Timeout reached. Running final failsafe click wave...")
     click_wave(POST_BUTTON_COORDS, "Failsafe", repeat_per_coord=4, wait=0.2)
     return False
-
+'''
 
 # -------------------
 # Main Upload Logic
@@ -222,13 +225,15 @@ def upload(caption, video_file, paste_path_func=None):
     print(" Writing caption...")
     write_caption(caption)
 
+    '''
     # Step 4: Scroll down and click Post via three-stage detection
     print(" Scrolling down to Post button...")
-    pyautogui.moveTo(960, 600)   # center of screen — over the main TikTok page
+   # pyautogui.moveTo(960, 600)   # center of screen — over the main TikTok page
     time.sleep(0.3)
     pyautogui.scroll(-1000000)
     time.sleep(1.5)              # give the page time to finish scrolling
     wait_for_post_button()
+    '''
 
     write_tiktok_ready_signal(caption, video_file)
     print(" TikTok post completed successfully!")

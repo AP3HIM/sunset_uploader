@@ -94,6 +94,10 @@ def get_schedule():
     with open(SCHEDULE_FILE, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
+def is_supported_url(url):
+    """ffmpeg can stream-extract from our CDN but not archive.org's redirect/auth flow."""
+    return "archive.org" not in url
+
 def create_clip(source_url, slug, timestamp):
 
     output_file = os.path.join(
@@ -121,7 +125,6 @@ def create_clip(source_url, slug, timestamp):
     subprocess.run(cmd, check=True)
 
     return output_file
-
 
 def upload_clip(video_file, caption):
     cmd = [
@@ -166,8 +169,14 @@ def main():
             print(f"Skipping {slug} (missing movie id)")
             continue
 
+        movie_url = movie_urls[slug]
+
+        if not is_supported_url(movie_url):
+            print(f"Skipping {slug} — archive.org URL not supported by ffmpeg pipeline: {movie_url}")
+            continue
+
         clip_file = create_clip(
-            movie_urls[slug],
+            movie_url,
             slug,
             current_timestamp
         )
@@ -187,7 +196,6 @@ def main():
         clips_created += 1
 
     print("Done.")
-
 
 if __name__ == "__main__":
     main()

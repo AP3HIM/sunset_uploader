@@ -93,12 +93,6 @@ def hover_then_find(image_name: str, hover_coords: Tuple[int, int],
 
 def wait_for_file_dialog_close(video_file: str, paste_path_func, max_wait=FILE_DIALOG_TIMEOUT) -> bool:
     start = time.time()
-    try:
-        _log("Calling paste_path_func...")
-        paste_path_func(video_file)
-        _log("paste_path_func returned.")
-    except Exception as e:
-        _log(f" Error calling paste_path_func: {e}")
     time.sleep(0.6)
     while time.time() - start < max_wait:
         next_btn = safe_locate('insta_next_file.png', confidence=0.70, retries=1, delay=0.25)
@@ -110,17 +104,20 @@ def wait_for_file_dialog_close(video_file: str, paste_path_func, max_wait=FILE_D
             _log("  'Select file' gone -> dialog closed.")
             return True
         time.sleep(0.35)
-    _log("  Timeout; sending ESC.")
-    if not DRY_RUN:
-        pyautogui.press("esc")
-        time.sleep(0.5)
-    select_btn = safe_locate('insta_select_file.png', confidence=0.72, retries=1, delay=0.25)
-    if not select_btn:
-        _log("  Dialog gone after ESC.")
-        return True
-    _log("  Dialog still present after ESC.")
-    return False
 
+    # Dialog still open after timeout — paste likely didn't register. Retry once.
+    _log("  Dialog still open after timeout. Retrying paste...")
+    paste_path_func(video_file)
+    time.sleep(2.0)
+
+    next_btn = safe_locate('insta_next_file.png', confidence=0.70, retries=2, delay=0.3)
+    select_btn = safe_locate('insta_select_file.png', confidence=0.72, retries=2, delay=0.3)
+    if next_btn or not select_btn:
+        _log("  Dialog closed after retry paste.")
+        return True
+
+    _log("  Dialog still present after retry — giving up.")
+    return False
 
 def diagnose_images(image_list=None):
     if image_list is None:
@@ -193,6 +190,7 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
             _log("Could not click select file — aborting.")
             return False
 
+        time.sleep(1.0)
         paste_path_func(video_file)
 
         ok = wait_for_file_dialog_close(video_file, paste_path_func, max_wait=FILE_DIALOG_TIMEOUT)
@@ -203,7 +201,7 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
 
         # Crop to 9:16
         _log("PAG: waiting for crop button...")
-        time.sleep(3.0)
+        time.sleep(1.2)
 
         crop_btn = safe_locate_any(
             ["insta_crop_button.png", "insta_crop_button_small.png"],
@@ -216,7 +214,7 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
             _log("PAG: crop button not found by image, using coords (631, 987)...")
             pyautogui.click(631, 987)
 
-        time.sleep(1.2)
+        time.sleep(0.8)
 
         nine_sixteen = safe_locate_any(
             ["insta_916_small.png"],
@@ -229,7 +227,7 @@ def upload_instagram(caption: str, video_file: str, paste_path_func) -> bool:
             _log("PAG: 9:16 image not found, using coords (668, 853)...")
             pyautogui.click(668, 853)
 
-        time.sleep(0.5)
+        time.sleep(0.2)
         _log("PAG: crop done.")
 
         if not click_or_fallback("insta_next_file.png", FALLBACKS["next1"]):
